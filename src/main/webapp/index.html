@@ -62,7 +62,6 @@
         {
           var userid = document.getElementById("userid");
           var url='tcss360/users/'+userid.value;
-
           $.ajax({
             type: 'GET',
             url: url,
@@ -70,11 +69,9 @@
             success: render_form
           });        
         });
-
         $('#userid').focusin(function () {
             old_userid = document.getElementById("userid").value;    
         });
-
         // If the user exits the userid textbox and places focus on another
         // GUI control on the screen, and if the user id had changed since
         // the user entered the box, then reload the user form
@@ -115,7 +112,6 @@
            document.getElementById("name").value = "";
            document.getElementById("age").value = "";
         });        
-
         // Save-User Click function
         //
         // If a new user, calls the POST to create a new user
@@ -186,18 +182,15 @@
              });        
          });
          
-
         
         // get and display users when the form is first loaded
         getusers();
         
     } );
-
     // gets and displays users by calling render
     function getusers() {
         // Form load
         var url='tcss360/users/0';
-
         $.ajax({
           type: 'GET',
           url: url,
@@ -211,7 +204,6 @@
         // Form load
         var userid = document.getElementById("userid"); 
         var url='tcss360/users/' + userid.value;
-
         $.ajax({
           type: 'GET',
           url: url,
