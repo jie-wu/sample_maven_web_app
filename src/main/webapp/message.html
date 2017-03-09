@@ -37,9 +37,8 @@
         }
         .message {
           width: 400px;
-          length:60px;
-        }
 
+        }
         .dateadded {
           width: 30px;
         }
@@ -92,7 +91,9 @@
         $('#delete-message').click(function ()
         {
            var messageid = document.getElementById("messageid");
+           var userid = document.getElementById("userid");
            var message = document.getElementById("message");
+            var dateadded = document.getElementById("dateadded");
            var messages = { 'messageid': messageid.value };           
            var url='tcss360/messages/';
            if (confirm('Are you sure - DELETE ' + message.value + '-(' + messageid.value + ') ?')) {
@@ -100,7 +101,7 @@
                type: 'DELETE',
                url: url,
                datatype: 'json',
-               data: JSON.stringify(message),
+               data: JSON.stringify(messages),
                contentType: 'application/json',
                success: render_delete
              }); 
@@ -126,7 +127,7 @@
             if (document.getElementById("messageid").disabled)
             {
                 // Create a new record
-                var messageid = document.getElementById("messageid");
+                //var messageid = document.getElementById("messageid");
                 var userid = document.getElementById("userid");
                 var message = document.getElementById("message");
                 var dateadded = document.getElementById("dateadded");
@@ -252,7 +253,7 @@
     function render_newmessage(data)
     {
         $.each(data, function(index, messages) { 
-          document.getElementById("messageid").value = message.messageid;
+          document.getElementById("messageid").value = messages.messageid;
         });
         document.getElementById("messageid").disabled = false;
         $('#mybody').empty();
