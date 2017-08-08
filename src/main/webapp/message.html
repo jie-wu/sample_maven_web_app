@@ -1,0 +1,327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <style>
+        <!-- inline style sheet -->
+        #myform{
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            padding-right: 20px;
+            padding-left: 20px;
+            font-family: sans-serif;
+        }
+        #mytable {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            padding-right: 20px;
+            padding-left: 20px;
+            font-family: sans-serif;
+        }
+        div {
+            font-family: sans-serif;
+            font-size: xx-large;
+            font-weight: bold;
+        }
+        .table-header {
+          background-color: yellow;
+          border: 1px solid black;
+        }.messageid {
+          width: 60px;
+        }
+        .userid {
+          width: 60px;
+        }
+        .message {
+          width: 400px;
+
+        }
+        .dateadded {
+          width: 30px;
+        }
+        th, td {
+          border: 1px solid black;
+          border-collapse: collapse;
+          padding-top: 5px;
+          padding-bottom: 5px;
+          padding-right: 20px;
+          padding-left: 20px;    
+        }
+    </style>
+    <title>Message Editor</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>    
+    <script language="javascript">
+    $(document).ready(function () { 
+        var old_messageid = document.getElementById("messageid").value;
+        
+        // Get-Data Click function
+        //
+        // Calls the GET service to lookup a currently entered messageid
+        $('#get-data').click(function () 
+        {
+          var messageid = document.getElementById("messageid");
+          var url='tcss360/messages/'+messageid.value;
+          $.ajax({
+            type: 'GET',
+            url: url,
+            datatype: 'json',
+            success: render_form
+          });        
+        });
+        $('#messageid').focusin(function () {
+            old_messageid = document.getElementById("messageid").value;    
+        });
+        // If the message exits the messageid textbox and places focus on another
+        // GUI control on the screen, and if the message id had changed since
+        // the message entered the box, then reload the message form
+        $('#messageid').focusout(function () {
+            var curr_messageid = document.getElementById("messageid").value;    
+            //alert(curr_messageid + '---' + old_messageid)
+            if (curr_messageid != old_messageid)
+                getmessage();
+        });
+        
+        // Delete-User Click function
+        //
+        // Calls the DELETE service to delete the selected message
+        $('#delete-message').click(function ()
+        {
+           var messageid = document.getElementById("messageid");
+           var userid = document.getElementById("userid");
+           var message = document.getElementById("message");
+            var dateadded = document.getElementById("dateadded");
+           var messages = { 'messageid': messageid.value };           
+           var url='tcss360/messages/';
+           if (confirm('Are you sure - DELETE ' + message.value + '-(' + messageid.value + ') ?')) {
+             $.ajax({
+               type: 'DELETE',
+               url: url,
+               datatype: 'json',
+               data: JSON.stringify(messages),
+               contentType: 'application/json',
+               success: render_delete
+             }); 
+           } 
+        });
+        
+        // New-User Click function
+        //
+        // Clears the form to allow entry of a new message record
+        $('#new-message').click(function ()
+        {
+           document.getElementById("messageid").disabled = true;
+           document.getElementById("userid").value = "";
+           document.getElementById("message").value = "";
+           document.getElementById("dateadded").value = "";
+        });        
+        // Save-User Click function
+        //
+        // If a new message, calls the POST to create a new message
+        // If an existing message, call the PUT to update the message
+        $('#save-message').click(function ()
+        {
+            if (document.getElementById("messageid").disabled)
+            {
+                // Create a new record
+                //var messageid = document.getElementById("messageid");
+                var userid = document.getElementById("userid");
+                var message = document.getElementById("message");
+                var dateadded = document.getElementById("dateadded");
+                var messages = { 'userid': userid.value,
+                                'message': message.value,
+                             'dateadded': dateadded.value };           
+                var url='tcss360/messages/';
+                if (confirm('Are you sure - CREATE ' + message.value + ' ?')) {
+                  $.ajax({
+                    type: 'POST',
+                    url: url,
+                    datatype: 'json',
+                    data: JSON.stringify(messages),
+                    contentType: 'application/json',
+                    success: render_newmessage
+                  }); 
+                }                 
+            }
+            else
+            {
+                // Update an existing record
+                var messageid = document.getElementById("messageid");
+                var userid = document.getElementById("userid");
+                var message = document.getElementById("message");
+                var dateadded = document.getElementById("dateadded");
+                var messages = { 'messageid': messageid.value,
+                              'userid': userid.value,
+                             'message': message.value,
+                             'dateadded': dateadded.value };           
+                var url='tcss360/messages/';
+                if (confirm('Are you sure - UPDATE ' + message.value + ' ?')) {
+                  $.ajax({
+                    type: 'PUT',
+                    url: url,
+                    datatype: 'json',
+                    data: JSON.stringify(messages),
+                    contentType: 'application/json',
+                    success: render_clear
+                  }); 
+                }                 
+            }
+        });
+        
+        // Dynamic table event handler
+        // 
+        // Gets the selected message row from the database and puts it
+        // display the message in the form.  Note, technically we could just
+        // read the static table content but this approach would allow
+        // you to read the entire message record including fields which may
+        // not be displayed in the HTML table.
+        // 
+        // Use .text() as td doesn't have method .val()
+        // Empty first time as the td has no text until clicked.
+        $(".table-body").on('click', 'tr', function() {
+            var clicked_messageid=$(this).find('td:first').text();
+            old_messageid = clicked_messageid;
+            var url='tcss360/messages/'+clicked_messageid;
+             $.ajax({
+               type: 'GET',
+               url: url,
+               datatype: 'json',
+               success: render_form
+             });        
+         });
+         
+        
+        // get and display messages when the form is first loaded
+        getmessages();
+        
+    } );
+    // gets and displays messages by calling render
+    function getmessages() {
+        // Form load
+        var url='tcss360/messages';
+        $.ajax({
+          type: 'GET',
+          url: url,
+          datatype: 'json',
+          success: render
+        }); 
+    }
+    
+    // gets and displays messages by calling render
+    function getmessage() {
+        // Form load
+        var messageid = document.getElementById("messageid"); 
+        var url='tcss360/messages/' + messageid.value;
+        $.ajax({
+          type: 'GET',
+          url: url,
+          datatype: 'json',
+          success: render_form
+        }); 
+    }    
+    
+    // renders the message table
+    function render(data)  {
+      $.each(data, function(index, messages) { 
+          var newrow = "<tr><td id=\"messageid\"" + index + "\">"+ messages.messageid + "</td>";
+          newrow += "<td id=\"userid\">" + messages.userid + "</td>";
+          newrow += "<td id=\"message\">" + messages.message + "</td>";
+          newrow += "<td id=\"dateadded\">" + messages.dateadded + "</td></tr>";
+          $('#mybody').append(newrow);
+      });
+    }
+    
+    // clears the table, reloads the messages
+    function render_clear(data)
+    {
+        $('#mybody').empty();
+        getmessages();
+    }
+    
+    // clears the table, reloads the messages, clears the message id textbox
+    function render_delete(data)
+    {
+        $('#mybody').empty();
+        getmessages();
+        document.getElementById("messageid").value = "";
+    }
+    
+    // display the messageid of a newly created message as supplied from the service
+    function render_newmessage(data)
+    {
+        $.each(data, function(index, messages) { 
+          document.getElementById("messageid").value = messages.messageid;
+        });
+        document.getElementById("messageid").disabled = false;
+        $('#mybody').empty();
+        getmessages();
+    }
+    
+    // displays a selected message in the form
+    function render_form(data)  {
+      var list = data;
+      if (list)
+        $.each(list, function(index, messages) { 
+            $('#messageid').val(messages.messageid);
+            $('#userid').val(messages.userid);
+            $('#message').val(messages.message);
+            $('#dateadded').val(messages.dateadded);
+        });
+      else
+      {
+        document.getElementById("userid").value = "";
+        document.getElementById("message").value = "";
+        document.getElementById("dateadded").value = "";
+      }
+    }    
+  </script>
+  </head>
+  <body  onload="">
+   <div id="title">
+   Message Editor - Sample Maven Web App
+   </div>
+   <br>
+   <table id="myform">
+   <tr>
+       <td>
+           <input type="button" value="Get Message" onclick="" id="get-data"/>
+           <input type="button" value="New Message" onclick="" id="new-message"/>
+           <input type="button" value="Save Message" onclick="" id="save-message"/>
+           <input type="button" value="Delete Message" onclick="" id="delete-message"/>
+       </td>        
+   </tr>
+   <tr>
+       <td>Enter Message ID :  </td>
+       <td><input type="text" id="messageid" size="10"/>  
+   </tr>
+   <tr>
+       <td>Enter User ID :  </td>
+       <td><input type="text" id="userid" size="10"/>  
+   </tr>
+   <tr>
+       <td>Enter Message :  </td>
+       <td><input type="text" id="message" size="100"/> </td>
+   </tr>
+   <tr>
+       <td>Dateadded : </td>
+       <td><input type="text" id="dateadded" size="20"/> </td>
+   </tr>
+   </table>
+   <br>
+   <table id="mytable" class="table">
+           <thead>
+             <tr class="table-header">
+                 <td class="messageid">Message Id</td>
+                 <td class="userid">User Id</td>
+                 <td class="message">Message</td>
+                 <td class="dateadded">Dateadded</td>
+             </tr>               
+           </thead>
+           <tbody id="mybody" class="table-body">
+           </tbody>
+   </table>
+  </body>
+</html>
